@@ -14,6 +14,25 @@ See http://us.metamath.org/copyright.html for further license and copyright
 information that applies to the content of this package.
 
 
+Fork notes (metamath-exe-json-exporter)
+---------------------------------------
+
+This repository is a fork of metamath-exe, intended to add JSON proof export
+functionality while preserving existing behavior.
+
+For this fork:
+
+1. Keep LICENSE.TXT with all distributions of this program.
+2. Treat modifications to the executable source as GPL v2 or later when
+  distributed.
+3. Keep existing copyright/license notices intact in source files.
+4. For each modified source file, add a prominent notice stating that the
+  file was changed and the date of change.
+
+Note: database files (*.mm) may have their own licensing terms in file headers.
+Check each bundled database file individually before redistribution.
+
+
 Instructions
 ------------
 

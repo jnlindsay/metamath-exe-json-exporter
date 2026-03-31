@@ -2,6 +2,19 @@
 
 We're a friendly community, and we would love to have more collaborators!
 
+## Fork policy for this repository
+
+This fork is used for incremental feature work (including JSON proof export)
+with small, reviewable commits.
+
+For changes in this fork:
+
+1. Keep existing upstream copyright and license notices intact.
+2. For each modified C or H file, add a prominent notice saying the file was
+    changed and include the date of change.
+3. Keep changes narrow in scope, with one logical behavior change per commit
+    where practical.
+
 ## Maintenance mode
 
 We view metamath-exe as being in maintenance mode. Although we do envisage
