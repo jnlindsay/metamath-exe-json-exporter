@@ -5,7 +5,7 @@
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
 /* Fork modification notice (Jeremy Lindsay, 31-Mar-2026):
-  Added JSON proof export scaffolding flag flow in typeProof(). */
+  Added JSON proof export support and moved JSON printing to mmjson module. */
 
 // mmcmds.c - assorted user commands
 
@@ -22,6 +22,7 @@
 #include "mmwtex.h" // For g_htmlVarColor,...
 #include "mmpfas.h"
 #include "mmunif.h" // For g_bracketMatchInit, g_minSubstLen, ...and g_firstConst
+#include "mmjson.h"
 
 // Local prototypes
 vstring bigAdd(vstring bignum1, vstring bignum2);
@@ -1335,12 +1336,17 @@ void typeProof(long statemNum,
   //      qualifier except / ESSENTIAL.
   //  / DETAILED_STEP <step> - Shows the details of what is happening at
   //      a specific proof step.  May not be used with any other qualifier.
+  //  / JSON - Output a machine-readable JSON representation of proof steps.
   //  / MIDI - puts out a midi sound file instead of a proof
   //      - determined by the global variable g_midiFlag, not by a parameter to
   //      typeProof()
 
-  if (jsonFlag) {
-    print2("?JSON proof export is not implemented yet (scaffolding only).\n");
+  if (jsonFlag && pipFlag) {
+    print2("?JSON proof export is currently supported only for SHOW PROOF.\n");
+    return;
+  }
+  if (jsonFlag && (texFlag || htmlFlag || g_midiFlag)) {
+    print2("?JSON proof export may not be used with TEX/HTML/MIDI modes.\n");
     return;
   }
 
@@ -1526,6 +1532,10 @@ void typeProof(long statemNum,
     }
   }
 
+  if (jsonFlag) {
+    mmJsonProofStart(g_Statement[statemNum].labelName);
+  }
+
   // Get the relative offset (0, -1, -2,...) for unknown steps
   nmbrString_def(relativeStepNums);
   if (unknownFlag) {
@@ -1661,7 +1671,8 @@ void typeProof(long statemNum,
       let(&tgtLabel, g_Statement[targetHyps[step]].labelName);
     }
     vstring_def(locLabDecl); // Local label declaration
-    long stmt = proof[step];
+    long proofStepRaw = proof[step];
+    long stmt = proofStepRaw;
     char type;
     if (stmt < 0) {
       if (stmt <= -1000) {
@@ -1859,7 +1870,66 @@ void typeProof(long statemNum,
 
       if (!pipFlag) {
 
-        if (!texFlag) {
+        if (jsonFlag) {
+          vstring_def(jsonRef);
+          if (proofStepRaw > 0) {
+            let(&jsonRef, g_Statement[proofStepRaw].labelName);
+          } else if (proofStepRaw <= -1000) {
+            long refStep = -1000 - proofStepRaw;
+            if (localLabelNames[refStep]) {
+              let(&jsonRef, cat("@", str((double)localLabelNames[refStep]), NULL));
+            } else {
+              let(&jsonRef, cat("@", str((double)refStep), NULL));
+            }
+          } else {
+            let(&jsonRef, "?");
+          }
+
+          const char *jsonType = "?";
+          nmbrString *jsonMath = g_WrkProof.mathStringPtrs[step];
+          if (nmbrLen(jsonMath)) {
+            jsonType = g_MathToken[jsonMath[0]].tokenName;
+          }
+          vstring_def(jsonExpr);
+          let(&jsonExpr, nmbrCvtMToVString(jsonMath));
+
+          mmJsonProofAddStepStart(stepRenumber[step],
+              jsonRef,
+              jsonType,
+              jsonExpr);
+
+          if (proofStepRaw > 0) {
+            long hypStep = step - 1;
+            nmbrString *hypPtr = g_Statement[proofStepRaw].reqHypList;
+            for (long hyp = g_Statement[proofStepRaw].numReqHyp - 1;
+                hyp >= 0; hyp--) {
+              if (!essentialFlag || g_Statement[hypPtr[hyp]].type == (char)e_) {
+                long argStep = stepRenumber[hypStep];
+                if (argStep == 0) {
+                  if (!skipRepeatedSteps) bug(221);
+                  if (proof[hypStep] != -(long)'?') {
+                    if (proof[hypStep] > -1000) bug(222);
+                    if (localLabelNames[-1000 - proof[hypStep]] == 0) bug(223);
+                    if (localLabelNames[-1000 - proof[hypStep]] !=
+                        stepRenumber[-1000 - proof[hypStep]]) bug(224);
+                    argStep = stepRenumber[-1000 - proof[hypStep]];
+                  } else {
+                    argStep = -(long)'?';
+                  }
+                }
+                mmJsonProofAddStepArg(argStep, (argStep == -(long)'?'));
+              }
+              if (hyp < g_Statement[proofStepRaw].numReqHyp) {
+                hypStep = hypStep - subproofLen(proof, hypStep);
+              }
+            }
+          }
+
+          mmJsonProofAddStepEnd();
+
+          free_vstring(jsonRef);
+          free_vstring(jsonExpr);
+        } else if (!texFlag) {
           if (!g_midiFlag) {
             printLongLine(cat(startPrefix," $", chr(type), " ",
                 nmbrCvtMToVString(g_WrkProof.mathStringPtrs[step]),
@@ -1943,6 +2013,10 @@ void typeProof(long statemNum,
   free_nmbrString(stepRenumber);
   free_nmbrString(notUnifiedFlags);
   free_nmbrString(relativeStepNums);
+
+  if (jsonFlag) {
+    mmJsonProofEnd();
+  }
 
   if (!pipFlag) {
     cleanWrkProof(); // Deallocate verifyProof storage
