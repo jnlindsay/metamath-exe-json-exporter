@@ -4,6 +4,9 @@
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
+/* Fork modification notice (Jeremy Lindsay, 31-Mar-2026):
+  Added JSON proof export plumbing flags to typeProof(). */
+
 #ifndef METAMATH_MMCMDS_H_
 #define METAMATH_MMCMDS_H_
 
@@ -32,6 +35,7 @@ void typeProof(long statemNum,
   long startColumn,
   flag skipRepeatedSteps,
   flag texFlag,
+  flag jsonFlag,
   flag htmlFlag);
 /*! Show details of step */
 void showDetailStep(long statemNum, long detailStep);

@@ -4,6 +4,9 @@
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
+/* Fork modification notice (Jeremy Lindsay, 31-Mar-2026):
+  Added JSON proof export scaffolding flag flow in typeProof(). */
+
 // mmcmds.c - assorted user commands
 
 #include <string.h>
@@ -807,6 +810,7 @@ void typeStatement(long showStmt,
               0, // splitColumn
               0, // skipRepeatedSteps
               1, // texFlag // Means either latex or html
+              0, // jsonFlag
               1 // htmlFlag
               );
 
@@ -953,6 +957,7 @@ void typeStatement(long showStmt,
           0, // splitColumn
           0, // skipRepeatedSteps
           1, // texFlag // Means either latex or html
+          0, // jsonFlag
           1 // htmlFlag
           );
     } // if (g_Statement[showStmt].type == (char)p_)
@@ -1282,6 +1287,7 @@ void typeProof(long statemNum,
     long splitColumn, // START_COLUMN
     flag skipRepeatedSteps, // NO_REPEATED_STEPS
     flag texFlag,
+    flag jsonFlag,
     flag htmlFlag
     // flag g_midiFlag - global to avoid changing many calls to typeProof()
   )
@@ -1332,6 +1338,11 @@ void typeProof(long statemNum,
   //  / MIDI - puts out a midi sound file instead of a proof
   //      - determined by the global variable g_midiFlag, not by a parameter to
   //      typeProof()
+
+  if (jsonFlag) {
+    print2("?JSON proof export is not implemented yet (scaffolding only).\n");
+    return;
+  }
 
   if (htmlFlag && texFlag) skipRepeatedSteps = 1; // Keep old behavior
   // Comment out the following line if you want to revert to the old

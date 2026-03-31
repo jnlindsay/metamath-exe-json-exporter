@@ -4,6 +4,9 @@
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
+/* Fork modification notice (Jeremy Lindsay, 31-Mar-2026):
+  Added /JSON switch parsing for SHOW PROOF. */
+
 // Command line syntax specification for Metamath
 
 #include <string.h>
@@ -550,7 +553,7 @@ flag processCommandLine(void) {
                 "|REVERSE|VERBOSE|NORMAL|PACKED|COMPRESSED|EXPLICIT",
                 "|FAST|OLD_COMPRESSION",
                 "|STATEMENT_SUMMARY|DETAILED_STEP|TEX|OLD_TEX|HTML",
-                "|LEMMON|START_COLUMN|NO_REPEATED_STEPS",
+                "|LEMMON|START_COLUMN|NO_REPEATED_STEPS|JSON",
                 "|RENUMBER|SIZE|<ESSENTIAL>", NULL)))
               goto pclbad;
             if (lastArgMatches("FROM_STEP")) {
