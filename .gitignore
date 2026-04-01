@@ -31,3 +31,5 @@ build/
 Doxyfile
 doxy/
 *.produced
+
+set.mm
