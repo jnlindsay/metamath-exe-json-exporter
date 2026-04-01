@@ -9,12 +9,17 @@
 #ifndef METAMATH_MMJSON_H_
 #define METAMATH_MMJSON_H_
 
-void mmJsonProofStart(const char *theoremLabel);
+void mmJsonProofStart(const char *theoremLabel, int fullJsonFlag);
 void mmJsonProofAddStepStart(long stepNum,
 	const char *ref,
 	const char *type,
-	const char *expr);
-void mmJsonProofAddStepArg(long argStep, int isUnknown);
+	const char *expr,
+	const char *refStatementType,
+	const char *refTypecode);
+void mmJsonProofAddStepArg(long argStep,
+	int isUnknown,
+	const char *argTypecode,
+	const char *argStatementType);
 void mmJsonProofAddStepEnd(void);
 void mmJsonProofEnd(void);
 

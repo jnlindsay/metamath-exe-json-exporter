@@ -14,6 +14,9 @@
 static yyjson_mut_doc *g_mmJsonDoc = NULL;
 static yyjson_mut_val *g_mmJsonSteps = NULL;
 static yyjson_mut_val *g_mmJsonCurrentArgs = NULL;
+static yyjson_mut_val *g_mmJsonCurrentArgTypecodes = NULL;
+static yyjson_mut_val *g_mmJsonCurrentArgStatementTypes = NULL;
+static int g_mmJsonFullMode = 0;
 
 static void mmJsonResetState(void) {
   if (g_mmJsonDoc) {
@@ -22,12 +25,16 @@ static void mmJsonResetState(void) {
   g_mmJsonDoc = NULL;
   g_mmJsonSteps = NULL;
   g_mmJsonCurrentArgs = NULL;
+  g_mmJsonCurrentArgTypecodes = NULL;
+  g_mmJsonCurrentArgStatementTypes = NULL;
+  g_mmJsonFullMode = 0;
 }
 
-void mmJsonProofStart(const char *theoremLabel) {
+void mmJsonProofStart(const char *theoremLabel, int fullJsonFlag) {
   yyjson_mut_val *root;
 
   mmJsonResetState();
+  g_mmJsonFullMode = fullJsonFlag;
   g_mmJsonDoc = yyjson_mut_doc_new(NULL);
   if (!g_mmJsonDoc) {
     print2("?JSON error: unable to allocate yyjson document.\n");
@@ -51,7 +58,9 @@ void mmJsonProofStart(const char *theoremLabel) {
 void mmJsonProofAddStepStart(long stepNum,
     const char *ref,
     const char *type,
-    const char *expr) {
+  const char *expr,
+  const char *refStatementType,
+  const char *refTypecode) {
   yyjson_mut_val *stepObj;
 
   if (!g_mmJsonDoc || !g_mmJsonSteps) {
@@ -75,9 +84,54 @@ void mmJsonProofAddStepStart(long stepNum,
   if (!g_mmJsonCurrentArgs) {
     print2("?JSON error: unable to add args array.\n");
   }
+
+  if (g_mmJsonFullMode) {
+    if (refStatementType) {
+      if (!yyjson_mut_obj_add_strcpy(g_mmJsonDoc,
+          stepObj,
+          "refStatementType",
+          refStatementType)) {
+        print2("?JSON error: unable to add refStatementType.\n");
+      }
+    } else {
+      if (!yyjson_mut_obj_add_null(g_mmJsonDoc, stepObj, "refStatementType")) {
+        print2("?JSON error: unable to add null refStatementType.\n");
+      }
+    }
+
+    if (refTypecode) {
+      if (!yyjson_mut_obj_add_strcpy(g_mmJsonDoc,
+          stepObj,
+          "refTypecode",
+          refTypecode)) {
+        print2("?JSON error: unable to add refTypecode.\n");
+      }
+    } else {
+      if (!yyjson_mut_obj_add_null(g_mmJsonDoc, stepObj, "refTypecode")) {
+        print2("?JSON error: unable to add null refTypecode.\n");
+      }
+    }
+
+    g_mmJsonCurrentArgTypecodes = yyjson_mut_obj_add_arr(g_mmJsonDoc,
+        stepObj,
+        "argTypecodes");
+    if (!g_mmJsonCurrentArgTypecodes) {
+      print2("?JSON error: unable to add argTypecodes array.\n");
+    }
+
+    g_mmJsonCurrentArgStatementTypes = yyjson_mut_obj_add_arr(g_mmJsonDoc,
+        stepObj,
+        "argStatementTypes");
+    if (!g_mmJsonCurrentArgStatementTypes) {
+      print2("?JSON error: unable to add argStatementTypes array.\n");
+    }
+  }
 }
 
-void mmJsonProofAddStepArg(long argStep, int isUnknown) {
+void mmJsonProofAddStepArg(long argStep,
+    int isUnknown,
+    const char *argTypecode,
+    const char *argStatementType) {
   if (!g_mmJsonDoc || !g_mmJsonCurrentArgs) {
     return;
   }
@@ -90,10 +144,40 @@ void mmJsonProofAddStepArg(long argStep, int isUnknown) {
       print2("?JSON error: unable to append numeric arg.\n");
     }
   }
+
+  if (g_mmJsonFullMode && g_mmJsonCurrentArgTypecodes
+      && g_mmJsonCurrentArgStatementTypes) {
+    if (argTypecode) {
+      if (!yyjson_mut_arr_add_strcpy(g_mmJsonDoc,
+          g_mmJsonCurrentArgTypecodes,
+          argTypecode)) {
+        print2("?JSON error: unable to append arg typecode.\n");
+      }
+    } else {
+      if (!yyjson_mut_arr_add_null(g_mmJsonDoc, g_mmJsonCurrentArgTypecodes)) {
+        print2("?JSON error: unable to append null arg typecode.\n");
+      }
+    }
+
+    if (argStatementType) {
+      if (!yyjson_mut_arr_add_strcpy(g_mmJsonDoc,
+          g_mmJsonCurrentArgStatementTypes,
+          argStatementType)) {
+        print2("?JSON error: unable to append arg statement type.\n");
+      }
+    } else {
+      if (!yyjson_mut_arr_add_null(g_mmJsonDoc,
+          g_mmJsonCurrentArgStatementTypes)) {
+        print2("?JSON error: unable to append null arg statement type.\n");
+      }
+    }
+  }
 }
 
 void mmJsonProofAddStepEnd(void) {
   g_mmJsonCurrentArgs = NULL;
+  g_mmJsonCurrentArgTypecodes = NULL;
+  g_mmJsonCurrentArgStatementTypes = NULL;
 }
 
 void mmJsonProofEnd(void) {

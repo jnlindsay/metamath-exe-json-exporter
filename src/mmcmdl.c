@@ -553,7 +553,7 @@ flag processCommandLine(void) {
                 "|REVERSE|VERBOSE|NORMAL|PACKED|COMPRESSED|EXPLICIT",
                 "|FAST|OLD_COMPRESSION",
                 "|STATEMENT_SUMMARY|DETAILED_STEP|TEX|OLD_TEX|HTML",
-                "|LEMMON|START_COLUMN|NO_REPEATED_STEPS|JSON",
+                "|LEMMON|START_COLUMN|NO_REPEATED_STEPS|JSON|FULL_JSON",
                 "|RENUMBER|SIZE|<ESSENTIAL>", NULL)))
               goto pclbad;
             if (lastArgMatches("FROM_STEP")) {

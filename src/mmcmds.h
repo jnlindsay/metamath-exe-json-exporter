@@ -36,6 +36,7 @@ void typeProof(long statemNum,
   flag skipRepeatedSteps,
   flag texFlag,
   flag jsonFlag,
+  flag jsonFullFlag,
   flag htmlFlag);
 /*! Show details of step */
 void showDetailStep(long statemNum, long detailStep);

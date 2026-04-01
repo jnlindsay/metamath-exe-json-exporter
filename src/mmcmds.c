@@ -812,6 +812,7 @@ void typeStatement(long showStmt,
               0, // skipRepeatedSteps
               1, // texFlag // Means either latex or html
               0, // jsonFlag
+              0, // jsonFullFlag
               1 // htmlFlag
               );
 
@@ -959,6 +960,7 @@ void typeStatement(long showStmt,
           0, // skipRepeatedSteps
           1, // texFlag // Means either latex or html
           0, // jsonFlag
+          0, // jsonFullFlag
           1 // htmlFlag
           );
     } // if (g_Statement[showStmt].type == (char)p_)
@@ -1289,6 +1291,7 @@ void typeProof(long statemNum,
     flag skipRepeatedSteps, // NO_REPEATED_STEPS
     flag texFlag,
     flag jsonFlag,
+    flag jsonFullFlag,
     flag htmlFlag
     // flag g_midiFlag - global to avoid changing many calls to typeProof()
   )
@@ -1337,6 +1340,7 @@ void typeProof(long statemNum,
   //  / DETAILED_STEP <step> - Shows the details of what is happening at
   //      a specific proof step.  May not be used with any other qualifier.
   //  / JSON - Output a machine-readable JSON representation of proof steps.
+  //  / FULL_JSON - Adds extra type metadata fields to / JSON output.
   //  / MIDI - puts out a midi sound file instead of a proof
   //      - determined by the global variable g_midiFlag, not by a parameter to
   //      typeProof()
@@ -1345,6 +1349,11 @@ void typeProof(long statemNum,
     print2("?JSON proof export is currently supported only for SHOW PROOF.\n");
     return;
   }
+    if (jsonFullFlag && !jsonFlag) {
+      print2("?FULL_JSON requires JSON mode.\n");
+      return;
+    }
+
   if (jsonFlag && (texFlag || htmlFlag || g_midiFlag)) {
     print2("?JSON proof export may not be used with TEX/HTML/MIDI modes.\n");
     return;
@@ -1533,7 +1542,7 @@ void typeProof(long statemNum,
   }
 
   if (jsonFlag) {
-    mmJsonProofStart(g_Statement[statemNum].labelName);
+    mmJsonProofStart(g_Statement[statemNum].labelName, jsonFullFlag);
   }
 
   // Get the relative offset (0, -1, -2,...) for unknown steps
@@ -1872,8 +1881,26 @@ void typeProof(long statemNum,
 
         if (jsonFlag) {
           vstring_def(jsonRef);
+          const char *jsonRefStmtType = NULL;
+          const char *jsonRefTypecode = NULL;
           if (proofStepRaw > 0) {
             let(&jsonRef, g_Statement[proofStepRaw].labelName);
+            if (jsonFullFlag) {
+              switch (g_Statement[proofStepRaw].type) {
+                case a_: jsonRefStmtType = "a"; break;
+                case p_: jsonRefStmtType = "p"; break;
+                case e_: jsonRefStmtType = "e"; break;
+                case f_: jsonRefStmtType = "f"; break;
+                case d_: jsonRefStmtType = "d"; break;
+                case v_: jsonRefStmtType = "v"; break;
+                case c_: jsonRefStmtType = "c"; break;
+                default: jsonRefStmtType = "?"; break;
+              }
+              if (g_Statement[proofStepRaw].mathStringLen > 0) {
+                jsonRefTypecode =
+                    g_MathToken[g_Statement[proofStepRaw].mathString[0]].tokenName;
+              }
+            }
           } else if (proofStepRaw <= -1000) {
             long refStep = -1000 - proofStepRaw;
             if (localLabelNames[refStep]) {
@@ -1896,7 +1923,9 @@ void typeProof(long statemNum,
           mmJsonProofAddStepStart(stepRenumber[step],
               jsonRef,
               jsonType,
-              jsonExpr);
+              jsonExpr,
+              jsonRefStmtType,
+              jsonRefTypecode);
 
           if (proofStepRaw > 0) {
             long hypStep = step - 1;
@@ -1904,6 +1933,8 @@ void typeProof(long statemNum,
             for (long hyp = g_Statement[proofStepRaw].numReqHyp - 1;
                 hyp >= 0; hyp--) {
               if (!essentialFlag || g_Statement[hypPtr[hyp]].type == (char)e_) {
+                const char *jsonArgTypecode = NULL;
+                const char *jsonArgStmtType = NULL;
                 long argStep = stepRenumber[hypStep];
                 if (argStep == 0) {
                   if (!skipRepeatedSteps) bug(221);
@@ -1917,7 +1948,29 @@ void typeProof(long statemNum,
                     argStep = -(long)'?';
                   }
                 }
-                mmJsonProofAddStepArg(argStep, (argStep == -(long)'?'));
+
+                if (jsonFullFlag) {
+                  long hypStmt = hypPtr[hyp];
+                  switch (g_Statement[hypStmt].type) {
+                    case a_: jsonArgStmtType = "a"; break;
+                    case p_: jsonArgStmtType = "p"; break;
+                    case e_: jsonArgStmtType = "e"; break;
+                    case f_: jsonArgStmtType = "f"; break;
+                    case d_: jsonArgStmtType = "d"; break;
+                    case v_: jsonArgStmtType = "v"; break;
+                    case c_: jsonArgStmtType = "c"; break;
+                    default: jsonArgStmtType = "?"; break;
+                  }
+                  if (g_Statement[hypStmt].mathStringLen > 0) {
+                    jsonArgTypecode =
+                        g_MathToken[g_Statement[hypStmt].mathString[0]].tokenName;
+                  }
+                }
+
+                mmJsonProofAddStepArg(argStep,
+                    (argStep == -(long)'?'),
+                    jsonArgTypecode,
+                    jsonArgStmtType);
               }
               if (hyp < g_Statement[proofStepRaw].numReqHyp) {
                 hypStep = hypStep - subproofLen(proof, hypStep);

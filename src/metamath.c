@@ -826,7 +826,8 @@ void command(int argc, char *argv[]) {
   long splitColumn; // Column at which formula starts in non-indented display
   flag skipRepeatedSteps; // NO_REPEATED_STEPS qualifier
   flag texFlag; // Flag for TeX
-  flag jsonFlag; // Flag for JSON proof output scaffolding
+  flag jsonFlag; // Flag for JSON proof output
+  flag jsonFullFlag; // Flag for additional JSON metadata fields
   flag saveFlag; // Flag to save in source
   flag fastFlag; // Flag for SAVE PROOF.../FAST
   long indentation; // Number of spaces to indent proof
@@ -3508,6 +3509,7 @@ void command(int argc, char *argv[]) {
       skipRepeatedSteps = 0;
       texFlag = 0;
       jsonFlag = 0;
+      jsonFullFlag = 0;
 
       i = switchPos("FROM_STEP");
       if (i) startStep = (long)val(g_fullArg[i + 1]);
@@ -3552,8 +3554,13 @@ void command(int argc, char *argv[]) {
           || switchPos("OLD_TEX");
       if (i) texFlag = 1;
 
-        i = switchPos("JSON");
-        if (i) jsonFlag = 1;
+      i = switchPos("JSON");
+      if (i) jsonFlag = 1;
+      i = switchPos("FULL_JSON");
+      if (i) {
+        jsonFlag = 1;
+        jsonFullFlag = 1;
+      }
 
       g_oldTexFlag = 0;
       if (switchPos("OLD_TEX")) g_oldTexFlag = 1;
@@ -3593,6 +3600,10 @@ void command(int argc, char *argv[]) {
           print2("?/ JSON may not be used with / TEX, / HTML, or / OLD_TEX.\n");
           continue;
         }
+      }
+      if (jsonFullFlag && !jsonFlag) {
+        print2("?/ FULL_JSON requires / JSON.\n");
+        continue;
       }
 
       i = switchPos("DETAILED_STEP"); // non-pip mode only
@@ -3957,6 +3968,7 @@ void command(int argc, char *argv[]) {
             skipRepeatedSteps,
             texFlag,
             jsonFlag,
+            jsonFullFlag,
             g_htmlFlag);
         if (texFlag) {
           if (!g_htmlFlag) {
@@ -4134,6 +4146,7 @@ void command(int argc, char *argv[]) {
             0, // skipRepeatedSteps
             0, // texFlag
             0, // jsonFlag
+            0, // jsonFullFlag
             0); // g_htmlFlag
       }
 
@@ -4172,6 +4185,7 @@ void command(int argc, char *argv[]) {
           0, // skipRepeatedSteps
           0, // texFlag
           0, // jsonFlag
+          0, // jsonFullFlag
           0); // g_htmlFlag
       continue;
     }
@@ -4196,6 +4210,7 @@ void command(int argc, char *argv[]) {
           0, // skipRepeatedSteps
           0, // texFlag
           0, // jsonFlag
+          0, // jsonFullFlag
           0); // g_htmlFlag
       continue;
     }
@@ -4284,6 +4299,7 @@ void command(int argc, char *argv[]) {
           0, // skipRepeatedSteps
           0, // texFlag
           0, // jsonFlag
+          0, // jsonFullFlag
           0); // g_htmlFlag
       continue;
     }
@@ -4441,6 +4457,7 @@ void command(int argc, char *argv[]) {
           0, // skipRepeatedSteps
           0, // texFlag
           0, // jsonFlag
+          0, // jsonFullFlag
           0); // g_htmlFlag
       continue;
     }
@@ -4545,6 +4562,7 @@ void command(int argc, char *argv[]) {
           0, // skipRepeatedSteps
           0, // texFlag
           0, // jsonFlag
+          0, // jsonFullFlag
           0); // g_htmlFlag
 
       g_proofChangedFlag = 1; // Flag to push 'undo' stack (future)
@@ -4709,6 +4727,7 @@ void command(int argc, char *argv[]) {
             0, // skipRepeatedSteps
             0, // texFlag
             0, // jsonFlag
+            0, // jsonFullFlag
             0); // g_htmlFlag
 
       continue;
@@ -5014,6 +5033,7 @@ void command(int argc, char *argv[]) {
             0, // skipRepeatedSteps
             0, // texFlag
             0, // jsonFlag
+            0, // jsonFullFlag
             0); // g_htmlFlag
 
       continue;
@@ -5658,6 +5678,7 @@ void command(int argc, char *argv[]) {
           0, // skipRepeatedSteps
           0, // texFlag
           0, // jsonFlag
+          0, // jsonFullFlag
           0); // g_htmlFlag
 
       g_proofChanged = 1; // Cumulative flag
@@ -5716,6 +5737,7 @@ void command(int argc, char *argv[]) {
             0, // skipRepeatedSteps
             0, // texFlag
             0, // jsonFlag
+            0, // jsonFullFlag
             0); // g_htmlFlag
 
         g_proofChanged = 1; // Cumulative flag
