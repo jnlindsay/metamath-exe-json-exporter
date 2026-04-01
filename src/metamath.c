@@ -704,6 +704,7 @@
 #include "mmdata.h"
 #include "mmcmdl.h"
 #include "mmcmds.h"
+#include "mmjson.h"
 #include "mmhlpa.h"
 #include "mmhlpb.h"
 #include "mminou.h"
@@ -828,6 +829,7 @@ void command(int argc, char *argv[]) {
   flag texFlag; // Flag for TeX
   flag jsonFlag; // Flag for JSON proof output
   flag jsonFullFlag; // Flag for additional JSON metadata fields
+  flag jsonBatchMode; // Aggregate wildcard SHOW PROOF / JSON output
   flag saveFlag; // Flag to save in source
   flag fastFlag; // Flag for SAVE PROOF.../FAST
   long indentation; // Number of spaces to indent proof
@@ -3622,6 +3624,13 @@ void command(int argc, char *argv[]) {
             "Reformatting and saving (but not recompressing) all proofs...\n");
       }
 
+      jsonBatchMode = 0;
+      if (!pipFlag && jsonFlag) {
+        if (instr(1, labelMatch, "*") || instr(1, labelMatch, "?")) {
+          jsonBatchMode = 1;
+        }
+      }
+
       q = 0; // Flag that at least one matching statement was found
       for (stmt = 1; stmt <= g_statements; stmt++) {
         // If pipFlag (NEW_PROOF), we will iterate exactly once. This
@@ -3635,6 +3644,9 @@ void command(int argc, char *argv[]) {
           g_showStatement = stmt;
         }
 
+        if (jsonBatchMode && !q) {
+          mmJsonBatchStart(jsonFullFlag);
+        }
         q = 1; // Flag that at least one matching statement was found
 
         if (detailStep) {
@@ -3929,7 +3941,8 @@ void command(int argc, char *argv[]) {
         } else { // !texFlag
           // Terminal output - display the statement if wildcard is used
           if (!pipFlag) {
-            if (instr(1, labelMatch, "*") || instr(1, labelMatch, "?")) {
+            if (!jsonFlag
+                && (instr(1, labelMatch, "*") || instr(1, labelMatch, "?"))) {
               if (!print2("Proof of \"%s\":\n", g_Statement[outStatement].labelName))
                 break; // Break for speedup if user quit
             }
@@ -4019,6 +4032,9 @@ void command(int argc, char *argv[]) {
 
         if (pipFlag) break; // Only one iteration for NEW_PROOF stuff
       } // Next stmt
+      if (jsonBatchMode && q) {
+        mmJsonBatchEnd();
+      }
       if (!q) {
         // No matching statement was found
         printLongLine(cat("?There is no $p statement whose label matches \"",

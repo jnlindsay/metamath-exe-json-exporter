@@ -22,5 +22,7 @@ void mmJsonProofAddStepArg(long argStep,
 	const char *argStatementType);
 void mmJsonProofAddStepEnd(void);
 void mmJsonProofEnd(void);
+void mmJsonBatchStart(int fullJsonFlag);
+void mmJsonBatchEnd(void);
 
 #endif // METAMATH_MMJSON_H_

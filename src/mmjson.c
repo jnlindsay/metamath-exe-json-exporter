@@ -12,46 +12,97 @@
 #include "third_party/yyjson/yyjson.h"
 
 static yyjson_mut_doc *g_mmJsonDoc = NULL;
+static yyjson_mut_val *g_mmJsonRoot = NULL;
 static yyjson_mut_val *g_mmJsonSteps = NULL;
 static yyjson_mut_val *g_mmJsonCurrentArgs = NULL;
 static yyjson_mut_val *g_mmJsonCurrentArgTypecodes = NULL;
 static yyjson_mut_val *g_mmJsonCurrentArgStatementTypes = NULL;
 static int g_mmJsonFullMode = 0;
+static int g_mmJsonBatchMode = 0;
 
 static void mmJsonResetState(void) {
   if (g_mmJsonDoc) {
     yyjson_mut_doc_free(g_mmJsonDoc);
   }
   g_mmJsonDoc = NULL;
+  g_mmJsonRoot = NULL;
   g_mmJsonSteps = NULL;
   g_mmJsonCurrentArgs = NULL;
   g_mmJsonCurrentArgTypecodes = NULL;
   g_mmJsonCurrentArgStatementTypes = NULL;
   g_mmJsonFullMode = 0;
+  g_mmJsonBatchMode = 0;
 }
 
-void mmJsonProofStart(const char *theoremLabel, int fullJsonFlag) {
-  yyjson_mut_val *root;
+static int mmJsonEnsureDoc(int fullJsonFlag) {
+  if (g_mmJsonDoc) {
+    return 1;
+  }
 
-  mmJsonResetState();
   g_mmJsonFullMode = fullJsonFlag;
   g_mmJsonDoc = yyjson_mut_doc_new(NULL);
   if (!g_mmJsonDoc) {
     print2("?JSON error: unable to allocate yyjson document.\n");
-    return;
+    return 0;
   }
 
-  root = yyjson_mut_obj(g_mmJsonDoc);
-  if (!root) {
+  g_mmJsonRoot = yyjson_mut_obj(g_mmJsonDoc);
+  if (!g_mmJsonRoot) {
     print2("?JSON error: unable to create root object.\n");
+    mmJsonResetState();
+    return 0;
+  }
+  yyjson_mut_doc_set_root(g_mmJsonDoc, g_mmJsonRoot);
+  return 1;
+}
+
+static void mmJsonWriteAndReset(void) {
+  char *jsonOut;
+  size_t jsonLen = 0;
+
+  if (!g_mmJsonDoc) {
+    return;
+  }
+  jsonOut = yyjson_mut_write(g_mmJsonDoc,
+      YYJSON_WRITE_PRETTY_TWO_SPACES | YYJSON_WRITE_NEWLINE_AT_END,
+      &jsonLen);
+  if (!jsonOut) {
+    print2("?JSON error: failed to serialize yyjson document.\n");
     mmJsonResetState();
     return;
   }
-  yyjson_mut_doc_set_root(g_mmJsonDoc, root);
-  g_mmJsonSteps = yyjson_mut_obj_add_arr(g_mmJsonDoc, root, theoremLabel);
+  if (jsonLen) {
+    print2("%s", jsonOut);
+  }
+  free(jsonOut);
+  mmJsonResetState();
+}
+
+void mmJsonBatchStart(int fullJsonFlag) {
+  mmJsonResetState();
+  g_mmJsonBatchMode = 1;
+  if (!mmJsonEnsureDoc(fullJsonFlag)) {
+    return;
+  }
+}
+
+void mmJsonBatchEnd(void) {
+  if (!g_mmJsonDoc) {
+    return;
+  }
+  mmJsonWriteAndReset();
+}
+
+void mmJsonProofStart(const char *theoremLabel, int fullJsonFlag) {
+  if (!mmJsonEnsureDoc(fullJsonFlag)) {
+    return;
+  }
+  g_mmJsonSteps = yyjson_mut_obj_add_arr(g_mmJsonDoc, g_mmJsonRoot, theoremLabel);
   if (!g_mmJsonSteps) {
     print2("?JSON error: unable to create proof steps array.\n");
-    mmJsonResetState();
+    if (!g_mmJsonBatchMode) {
+      mmJsonResetState();
+    }
   }
 }
 
@@ -181,23 +232,12 @@ void mmJsonProofAddStepEnd(void) {
 }
 
 void mmJsonProofEnd(void) {
-  char *jsonOut;
-  size_t jsonLen = 0;
-
-  if (!g_mmJsonDoc) {
+  if (!g_mmJsonDoc || g_mmJsonBatchMode) {
+    g_mmJsonSteps = NULL;
+    g_mmJsonCurrentArgs = NULL;
+    g_mmJsonCurrentArgTypecodes = NULL;
+    g_mmJsonCurrentArgStatementTypes = NULL;
     return;
   }
-  jsonOut = yyjson_mut_write(g_mmJsonDoc,
-      YYJSON_WRITE_PRETTY_TWO_SPACES | YYJSON_WRITE_NEWLINE_AT_END,
-      &jsonLen);
-  if (!jsonOut) {
-    print2("?JSON error: failed to serialize yyjson document.\n");
-    mmJsonResetState();
-    return;
-  }
-  if (jsonLen) {
-    print2("%s", jsonOut);
-  }
-  free(jsonOut);
-  mmJsonResetState();
+  mmJsonWriteAndReset();
 }
