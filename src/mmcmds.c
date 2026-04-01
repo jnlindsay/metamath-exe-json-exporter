@@ -1928,8 +1928,36 @@ void typeProof(long statemNum,
               jsonRefTypecode);
 
           if (proofStepRaw > 0) {
+            long maxJsonArgs = g_Statement[proofStepRaw].numReqHyp;
+            long jsonArgCount = 0;
+            long *jsonArgSteps = NULL;
+            int *jsonArgUnknown = NULL;
+            const char **jsonArgTypecodes = NULL;
+            const char **jsonArgStmtTypes = NULL;
             long hypStep = step - 1;
             nmbrString *hypPtr = g_Statement[proofStepRaw].reqHypList;
+
+            if (maxJsonArgs > 0) {
+              jsonArgSteps = malloc((size_t)maxJsonArgs * sizeof(long));
+              jsonArgUnknown = malloc((size_t)maxJsonArgs * sizeof(int));
+              if (jsonFullFlag) {
+                jsonArgTypecodes = malloc((size_t)maxJsonArgs * sizeof(const char *));
+                jsonArgStmtTypes = malloc((size_t)maxJsonArgs * sizeof(const char *));
+              }
+              if (!jsonArgSteps || !jsonArgUnknown
+                  || (jsonFullFlag && (!jsonArgTypecodes || !jsonArgStmtTypes))) {
+                print2("?JSON error: unable to allocate argument buffer.\n");
+                free(jsonArgSteps);
+                free(jsonArgUnknown);
+                free(jsonArgTypecodes);
+                free(jsonArgStmtTypes);
+                jsonArgSteps = NULL;
+                jsonArgUnknown = NULL;
+                jsonArgTypecodes = NULL;
+                jsonArgStmtTypes = NULL;
+              }
+            }
+
             for (long hyp = g_Statement[proofStepRaw].numReqHyp - 1;
                 hyp >= 0; hyp--) {
               if (!essentialFlag || g_Statement[hypPtr[hyp]].type == (char)e_) {
@@ -1967,15 +1995,39 @@ void typeProof(long statemNum,
                   }
                 }
 
-                mmJsonProofAddStepArg(argStep,
-                    (argStep == -(long)'?'),
-                    jsonArgTypecode,
-                    jsonArgStmtType);
+                if (jsonArgSteps && jsonArgUnknown) {
+                  jsonArgSteps[jsonArgCount] = argStep;
+                  jsonArgUnknown[jsonArgCount] = (argStep == -(long)'?');
+                  if (jsonFullFlag && jsonArgTypecodes && jsonArgStmtTypes) {
+                    jsonArgTypecodes[jsonArgCount] = jsonArgTypecode;
+                    jsonArgStmtTypes[jsonArgCount] = jsonArgStmtType;
+                  }
+                  jsonArgCount++;
+                } else {
+                  mmJsonProofAddStepArg(argStep,
+                      (argStep == -(long)'?'),
+                      jsonArgTypecode,
+                      jsonArgStmtType);
+                }
               }
               if (hyp < g_Statement[proofStepRaw].numReqHyp) {
                 hypStep = hypStep - subproofLen(proof, hypStep);
               }
             }
+
+            if (jsonArgSteps && jsonArgUnknown) {
+              for (long argIx = jsonArgCount - 1; argIx >= 0; argIx--) {
+                mmJsonProofAddStepArg(jsonArgSteps[argIx],
+                    jsonArgUnknown[argIx],
+                    (jsonFullFlag && jsonArgTypecodes) ? jsonArgTypecodes[argIx] : NULL,
+                    (jsonFullFlag && jsonArgStmtTypes) ? jsonArgStmtTypes[argIx] : NULL);
+              }
+            }
+
+            free(jsonArgSteps);
+            free(jsonArgUnknown);
+            free(jsonArgTypecodes);
+            free(jsonArgStmtTypes);
           }
 
           mmJsonProofAddStepEnd();
