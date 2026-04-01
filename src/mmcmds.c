@@ -1668,6 +1668,7 @@ void typeProof(long statemNum,
     if (skipRepeatedSteps) {
       if (stepRenumber[step] == 0) stepPrintFlag = 0;
     }
+    if (jsonFlag && proof[step] <= -1000) stepPrintFlag = 0;
 
     // For MIDI files, ignore all qualifiers and process all steps
     if (g_midiFlag) stepPrintFlag = 1;
@@ -1729,7 +1730,8 @@ void typeProof(long statemNum,
           if (!essentialFlag || g_Statement[hypPtr[hyp]].type == (char)e_) {
             i = stepRenumber[hypStep];
             if (i == 0) {
-              if (!skipRepeatedSteps) bug(221);
+              if (!skipRepeatedSteps
+                  && !(jsonFlag && proof[hypStep] <= -1000)) bug(221);
               if (proof[hypStep] != -(long)'?') {
                 if (proof[hypStep] > -1000) bug(222);
                 if (localLabelNames[-1000 - proof[hypStep]] == 0) bug(223);
@@ -1964,8 +1966,15 @@ void typeProof(long statemNum,
                 const char *jsonArgTypecode = NULL;
                 const char *jsonArgStmtType = NULL;
                 long argStep = stepRenumber[hypStep];
+                if (proof[hypStep] <= -1000) {
+                  if (localLabelNames[-1000 - proof[hypStep]] == 0) bug(223);
+                  if (localLabelNames[-1000 - proof[hypStep]] !=
+                      stepRenumber[-1000 - proof[hypStep]]) bug(224);
+                  argStep = stepRenumber[-1000 - proof[hypStep]];
+                }
                 if (argStep == 0) {
-                  if (!skipRepeatedSteps) bug(221);
+                  if (!skipRepeatedSteps
+                      && !(jsonFlag && proof[hypStep] <= -1000)) bug(221);
                   if (proof[hypStep] != -(long)'?') {
                     if (proof[hypStep] > -1000) bug(222);
                     if (localLabelNames[-1000 - proof[hypStep]] == 0) bug(223);
