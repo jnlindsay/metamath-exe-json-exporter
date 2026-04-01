@@ -33,3 +33,4 @@ doxy/
 *.produced
 
 set.mm
+*.json
