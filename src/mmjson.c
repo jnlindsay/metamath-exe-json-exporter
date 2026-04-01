@@ -72,7 +72,18 @@ static void mmJsonWriteAndReset(void) {
     return;
   }
   if (jsonLen) {
-    print2("%s", jsonOut);
+    if (g_outputToString) {
+      let(&g_printString, cat(g_printString, jsonOut, NULL));
+    } else {
+      if (!g_commandFileSilentFlag) {
+        fwrite(jsonOut, 1, jsonLen, stdout);
+        fflush(stdout);
+      }
+      if (g_logFileOpenFlag) {
+        fwrite(jsonOut, 1, jsonLen, g_logFilePtr);
+        fflush(g_logFilePtr);
+      }
+    }
   }
   free(jsonOut);
   mmJsonResetState();
