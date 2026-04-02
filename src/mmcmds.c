@@ -1664,6 +1664,16 @@ void typeProof(long statemNum,
       if (proof[step] != -(long)'?') stepPrintFlag = 0;
     }
 
+    // In default JSON mode (without /ALL), emit only logical statement steps
+    // whose expression typecode is "|-".
+    if (jsonFlag && essentialFlag) {
+      nmbrString *jsonStepMath = g_WrkProof.mathStringPtrs[step];
+      if (!nmbrLen(jsonStepMath)
+          || strcmp(g_MathToken[jsonStepMath[0]].tokenName, "|-")) {
+        stepPrintFlag = 0;
+      }
+    }
+
     // Skip steps that are local label references for html
     if (skipRepeatedSteps) {
       if (stepRenumber[step] == 0) stepPrintFlag = 0;
