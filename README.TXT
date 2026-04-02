@@ -32,6 +32,21 @@ For this fork:
 Note: database files (*.mm) may have their own licensing terms in file headers.
 Check each bundled database file individually before redistribution.
 
+macOS build notes for this fork
+-------------------------------
+
+Short fallback if autoconf is unavailable:
+
+1. Ensure Apple Command Line Tools are installed (provides "cc").
+2. From repository root, run:
+
+  cc src/m*.c -o metamath
+
+3. Optional quick smoke test:
+
+  printf 'set scroll continuous\nshow proof th1 / json\nexit\n' | \
+    ./metamath tests/demo0.mm
+
 
 Instructions
 ------------
