@@ -20,6 +20,15 @@ Fork notes (metamath-exe-json-exporter)
 This repository is a fork of metamath-exe, intended to add JSON proof export
 functionality while preserving existing behavior.
 
+Usage:
+1. In Metamath, execute the following commands:
+  1. READ set.mm
+  2. OPEN LOG set.json
+  3. SHOW PROOF * /JSON
+  4. CLOSE LOG
+2. The output file set.json may contain unnecessary lines at the
+   beginning and of the file. You may need trim these lines manually.
+
 For this fork:
 
 1. Keep LICENSE.TXT with all distributions of this program.
